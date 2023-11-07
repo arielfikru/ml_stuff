@@ -1,5 +1,6 @@
 import cv2
 import torch
+from PIL import Image
 from pathlib import Path
 import os
 import urllib.request
@@ -29,6 +30,11 @@ if not os.path.exists(model_weights):
 device = 'cuda' if torch.cuda.is_available() and args.use_cuda else 'cpu'
 
 model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_weights, force_reload=False).to(device)
+
+def strip_icc_profile(image_path):
+    with Image.open(image_path) as img:
+        img.info.pop('icc_profile', None)
+        img.save(image_path, format=img.format)
 
 def add_margin(x1, y1, x2, y2, width, height, margin):
     x1 = max(x1 - margin, 0)
@@ -68,6 +74,7 @@ def process_images(input_path, output_directory, target_resolution, confidence_t
         for file in files:
             if file.lower().endswith(('.png', '.jpg', '.jpeg')):
                 image_path = os.path.join(root, file)
+                strip_icc_profile(image_path)  # Strip the ICC profile
                 batch.append(image_path)
                 if len(batch) >= batch_size:
                     process_batch(batch, output_directory, target_resolution, confidence_threshold, margin_percentage, no_log)
