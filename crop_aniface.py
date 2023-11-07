@@ -9,9 +9,9 @@ import argparse
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 parser = argparse.ArgumentParser(description='Crop faces from images using YOLOv5 model.')
-parser.add_argument('--input', type=str, default='/content/input', help='Folder path to input images.')
-parser.add_argument('--output', type=str, default='/content/output', help='Folder path for saving output images.')
-parser.add_argument('--weights', type=str, default='', help='Path to model weights file.')
+parser.add_argument('--input', type=str, default='./input', help='Folder path to input images.')
+parser.add_argument('--output', type=str, default='./output', help='Folder path for saving output images.')
+parser.add_argument('--weights', type=str, default='./yolov5s_anime.pt', help='Path to model weights file.')
 parser.add_argument('--resolution', type=int, nargs=2, default=[512, 512], help='Resolution for the output images. Pass as two numbers.')
 parser.add_argument('--confidence', type=float, default=0.5, help='Confidence threshold for detection.')
 parser.add_argument('--margin', type=float, default=0.2, help='Margin percentage to add around the detected face.')
@@ -22,14 +22,14 @@ parser.add_argument('--use_cuda', action='store_true', help='Use CUDA for proces
 args = parser.parse_args()
 
 default_weights_url = "https://huggingface.co/nekofura/yolo/resolve/main/yolov5s_anime.pt"
-model_weights = args.weights if args.weights else '/content/yolov5s_anime.pt'
+model_weights = args.weights if args.weights else './yolov5s_anime.pt'
 
 if not os.path.exists(model_weights):
     print(f"Model weights not found at {model_weights}. Downloading from {default_weights_url}...")
     model_weights, _ = urllib.request.urlretrieve(default_weights_url)
 
 device = 'cuda' if torch.cuda.is_available() and args.use_cuda else 'cpu'
-model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_weights, force_reload=True).to(device)
+model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_weights, force_reload=False).to(device)
 
 def strip_icc_profile(image_path):
     try:
@@ -88,6 +88,8 @@ def process_images(input_path, output_directory, target_resolution, confidence_t
     if batch:
         process_batch(batch, output_directory, target_resolution, confidence_threshold, margin_percentage, no_log)
 
-Path(args.output).mkdir(parents=True, exist_ok=True)
 
-process_images(args.input, args.output, args.resolution, args.confidence, args.margin, args.no_log, args.batch_size)
+output_path = Path(args.output)
+output_path.mkdir(parents=True, exist_ok=True)
+
+process_images(args.input, output_path, args.resolution, args.confidence, args.margin, args.no_log, args.batch_size)
