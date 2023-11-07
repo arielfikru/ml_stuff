@@ -5,13 +5,14 @@ from pathlib import Path
 import os
 import urllib.request
 import argparse
+import subprocess
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 parser = argparse.ArgumentParser(description='Crop faces from images using YOLOv5 model.')
 parser.add_argument('--input', type=str, default='./input', help='Folder path to input images.')
 parser.add_argument('--output', type=str, default='./output', help='Folder path for saving output images.')
-parser.add_argument('--weights', type=str, default='./yolov5s_anime.pt', help='Path to model weights file.')
+parser.add_argument('--weights', type=str, help='Path to model weights file.')
 parser.add_argument('--resolution', type=int, nargs=2, default=[512, 512], help='Resolution for the output images. Pass as two numbers.')
 parser.add_argument('--confidence', type=float, default=0.5, help='Confidence threshold for detection.')
 parser.add_argument('--margin', type=float, default=0.2, help='Margin percentage to add around the detected face.')
@@ -19,17 +20,28 @@ parser.add_argument('--recursive', action='store_true', help='Recursively proces
 parser.add_argument('--no_log', action='store_true', help='Disable logging of processed faces.')
 parser.add_argument('--batch_size', type=int, default=4, help='Number of images to process in a batch.')
 parser.add_argument('--use_cuda', action='store_true', help='Use CUDA for processing if available.')
+
 args = parser.parse_args()
 
-default_weights_url = "https://huggingface.co/nekofura/yolo/resolve/main/yolov5s_anime.pt"
-model_weights = args.weights if args.weights else './yolov5s_anime.pt'
+downloads_dir = Path(__file__).parent / 'downloads'
+downloads_dir.mkdir(exist_ok=True)
 
-if not os.path.exists(model_weights):
-    print(f"Model weights not found at {model_weights}. Downloading from {default_weights_url}...")
-    model_weights, _ = urllib.request.urlretrieve(default_weights_url)
+default_weights_url = "https://huggingface.co/nekofura/yolo/resolve/main/yolov5s_anime.pt"
+weights_filename = 'yolov5s_anime.pt'
+local_weights_path = downloads_dir / weights_filename
+if not local_weights_path.exists() and not args.weights:
+    print(f"Downloading model weights to {local_weights_path}")
+    urllib.request.urlretrieve(default_weights_url, local_weights_path)
+
+model_weights = args.weights or str(local_weights_path)
+
+yolov5_repo_path = downloads_dir / 'yolov5'
+if not yolov5_repo_path.exists():
+    subprocess.run(['git', 'clone', '--depth', '1', 'https://github.com/ultralytics/yolov5', str(yolov5_repo_path)], check=True)
 
 device = 'cuda' if torch.cuda.is_available() and args.use_cuda else 'cpu'
-model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_weights, force_reload=False).to(device)
+
+model = torch.hub.load(str(yolov5_repo_path), 'custom', path=model_weights, source='local', force_reload=False).to(device)
 
 def strip_icc_profile(image_path):
     try:
