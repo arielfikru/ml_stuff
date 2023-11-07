@@ -29,7 +29,7 @@ if not os.path.exists(model_weights):
     model_weights, _ = urllib.request.urlretrieve(default_weights_url)
 
 device = 'cuda' if torch.cuda.is_available() and args.use_cuda else 'cpu'
-model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_weights, force_reload=False).to(device)
+model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_weights, force_reload=True).to(device)
 
 def strip_icc_profile(image_path):
     try:
