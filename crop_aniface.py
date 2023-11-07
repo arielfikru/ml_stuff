@@ -1,10 +1,12 @@
 import cv2
 import torch
-from PIL import Image
+from PIL import Image, ImageFile
 from pathlib import Path
 import os
 import urllib.request
 import argparse
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 parser = argparse.ArgumentParser(description='Crop faces from images using YOLOv5 model.')
 parser.add_argument('--input', type=str, default='/content/input', help='Folder path to input images.')
@@ -17,7 +19,6 @@ parser.add_argument('--recursive', action='store_true', help='Recursively proces
 parser.add_argument('--no_log', action='store_true', help='Disable logging of processed faces.')
 parser.add_argument('--batch_size', type=int, default=4, help='Number of images to process in a batch.')
 parser.add_argument('--use_cuda', action='store_true', help='Use CUDA for processing if available.')
-
 args = parser.parse_args()
 
 default_weights_url = "https://huggingface.co/nekofura/yolo/resolve/main/yolov5s_anime.pt"
@@ -25,16 +26,19 @@ model_weights = args.weights if args.weights else '/content/yolov5s_anime.pt'
 
 if not os.path.exists(model_weights):
     print(f"Model weights not found at {model_weights}. Downloading from {default_weights_url}...")
-    urllib.request.urlretrieve(default_weights_url, model_weights)
+    model_weights, _ = urllib.request.urlretrieve(default_weights_url)
 
 device = 'cuda' if torch.cuda.is_available() and args.use_cuda else 'cpu'
-
 model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_weights, force_reload=False).to(device)
 
 def strip_icc_profile(image_path):
-    with Image.open(image_path) as img:
-        img.info.pop('icc_profile', None)
-        img.save(image_path, format=img.format)
+    try:
+        with Image.open(image_path) as img:
+            img.info.pop('icc_profile', None)
+            img.save(image_path, format=img.format)
+    except OSError:
+        print(f"Error encountered with image {image_path}. Removing corrupted image.")
+        os.remove(image_path)
 
 def add_margin(x1, y1, x2, y2, width, height, margin):
     x1 = max(x1 - margin, 0)
