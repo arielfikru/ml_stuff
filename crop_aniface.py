@@ -15,7 +15,7 @@ parser.add_argument('--output', type=str, default='./output', help='Folder path 
 parser.add_argument('--weights', type=str, help='Path to model weights file.')
 parser.add_argument('--resolution', type=int, nargs=2, default=[512, 512], help='Resolution for the output images. Pass as two numbers.')
 parser.add_argument('--confidence', type=float, default=0.5, help='Confidence threshold for detection.')
-parser.add_argument('--margin', type=float, default=0.2, help='Margin percentage to add around the detected face.')
+parser.add_argument('--margin', type=float, default=0.5, help='Margin percentage to add around the detected face.')
 parser.add_argument('--recursive', action='store_true', help='Recursively process images in subfolders.')
 parser.add_argument('--no_log', action='store_true', help='Disable logging of processed faces.')
 parser.add_argument('--batch_size', type=int, default=4, help='Number of images to process in a batch.')
