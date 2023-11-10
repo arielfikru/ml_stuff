@@ -3,6 +3,7 @@ import torch
 from torchvision.io import read_image
 from torchvision.transforms.functional import to_pil_image
 
+#Setting this
 print_za_log = True
 removeCorrupted = True
 moveCorrupted = False
