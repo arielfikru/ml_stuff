@@ -77,12 +77,26 @@ def process_detections(input_image_path, detections, output_directory, target_re
         face_count += 1
 
 def process_batch(batch, output_directory, target_resolution, confidence_threshold, margin_percentage, no_log):
-    images = [cv2.imread(img_path) for img_path in batch]
+    images = []
+    valid_image_paths = []
+    for img_path in batch:
+        img = cv2.imread(img_path)
+        if img is not None:
+            images.append(img)
+            valid_image_paths.append(img_path)
+        else:
+            print(f"Warning: Unable to read image {img_path}. Skipping.")
+
+    if not images:
+        print("No valid images to process in this batch.")
+        return
+
     results = model(images, size=640)
-    for img_path, result in zip(batch, results.pred):
+    for img_path, result in zip(valid_image_paths, results.pred):
         detections = result
         detections = detections[detections[:, 4] >= confidence_threshold]
         process_detections(img_path, detections, output_directory, target_resolution, margin_percentage, no_log)
+
 
 def process_images(input_path, output_directory, target_resolution, confidence_threshold, margin_percentage, no_log, batch_size):
     batch = []
@@ -104,4 +118,8 @@ def process_images(input_path, output_directory, target_resolution, confidence_t
 output_path = Path(args.output)
 output_path.mkdir(parents=True, exist_ok=True)
 
-process_images(args.input, output_path, args.resolution, args.confidence, args.margin, args.no_log, args.batch_size)
+# Panggil fungsi process_images di bagian akhir skrip
+try:
+    process_images(args.input, output_path, args.resolution, args.confidence, args.margin, args.no_log, args.batch_size)
+except Exception as e:
+    print(f"Error occurred during processing: {e}")
