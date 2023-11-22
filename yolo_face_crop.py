@@ -30,7 +30,7 @@ for img_path in Path(input_folder).glob('*.*'):
     results = model(img_path)
 
     if not render_box:
-        original_img = Image.open(img_path)
+        original_img = Image.open(img_path).convert('RGB')
         img_width, img_height = original_img.size
     else:
         rendered_img = results.render()[0]
