@@ -2,13 +2,14 @@ import torch
 from pathlib import Path
 import os
 from PIL import Image
-
+lders
 custom_weights = '/content/yolov5s_anime.pt'
 input_folder = '/content/gallery-dl/safebooru/yor_briar 1girl solo sweater'
 output_folder = '/content/yor_face'
 expand_box = 1.5
-render_box = False
-print_log = False
+render_box = True
+print_log = True
+target_class = 3
 
 os.makedirs(output_folder, exist_ok=True)
 
@@ -37,18 +38,19 @@ for img_path in Path(input_folder).glob('*.*'):
         img_height, img_width, _ = rendered_img.shape
 
     for idx, det in enumerate(results.xyxy[0]):
-        bbox = adjust_bbox(det[:4].cpu().numpy(), expand_box, img_width, img_height)
+        if int(det[5]) == target_class:
+            bbox = adjust_bbox(det[:4].cpu().numpy(), expand_box, img_width, img_height)
 
-        x1_new, y1_new, x2_new, y2_new = map(int, bbox)
+            x1_new, y1_new, x2_new, y2_new = map(int, bbox)
 
-        save_path = os.path.join(output_folder, f"{img_path.stem}_{idx}.jpg")
+            save_path = os.path.join(output_folder, f"{img_path.stem}_{idx}.jpg")
 
-        if not render_box:
-            cropped_img = original_img.crop((x1_new, y1_new, x2_new, y2_new))
-            cropped_img.save(save_path)
-        else:
-            cropped_img = rendered_img[y1_new:y2_new, x1_new:x2_new]
-            Image.fromarray(cropped_img).save(save_path)
+            if not render_box:
+                cropped_img = original_img.crop((x1_new, y1_new, x2_new, y2_new))
+                cropped_img.save(save_path)
+            else:
+                cropped_img = rendered_img[y1_new:y2_new, x1_new:x2_new]
+                Image.fromarray(cropped_img).save(save_path)
 
     if print_log:
         print(f'Processed {img_path}')
